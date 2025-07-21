@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 Color Tokens -->
+    
+    <!-- Primary Colors -->
+    <color name="md_theme_primary">#006A6B</color>
+    <color name="md_theme_on_primary">#FFFFFF</color>
+    <color name="md_theme_primary_container">#6FF7F8</color>
+    <color name="md_theme_on_primary_container">#002020</color>
+    
+    <!-- Secondary Colors -->
+    <color name="md_theme_secondary">#4A6363</color>
+    <color name="md_theme_on_secondary">#FFFFFF</color>
+    <color name="md_theme_secondary_container">#CCE8E7</color>
+    <color name="md_theme_on_secondary_container">#051F1F</color>
+    
+    <!-- Tertiary Colors -->
+    <color name="md_theme_tertiary">#4B607C</color>
+    <color name="md_theme_on_tertiary">#FFFFFF</color>
+    <color name="md_theme_tertiary_container">#D2E4FF</color>
+    <color name="md_theme_on_tertiary_container">#041C35</color>
+    
+    <!-- Error Colors -->
+    <color name="md_theme_error">#BA1A1A</color>
+    <color name="md_theme_on_error">#FFFFFF</color>
+    <color name="md_theme_error_container">#FFDAD6</color>
+    <color name="md_theme_on_error_container">#410002</color>
+    
+    <!-- Surface Colors -->
+    <color name="md_theme_surface">#FAFDFC</color>
+    <color name="md_theme_on_surface">#191C1C</color>
+    <color name="md_theme_surface_variant">#DAE5E4</color>
+    <color name="md_theme_on_surface_variant">#3F4948</color>
+    
+    <!-- Background Colors -->
+    <color name="md_theme_background">#FAFDFC</color>
+    <color name="md_theme_on_background">#191C1C</color>
+    
+    <!-- Outline Colors -->
+    <color name="md_theme_outline">#6F7979</color>
+    <color name="md_theme_outline_variant">#BEC9C8</color>
+    
+    <!-- Custom App Colors -->
+    <color name="positive_amount">#2E7D32</color>  <!-- 绿色：正数金额 -->
+    <color name="negative_amount">#D32F2F</color>  <!-- 红色：负数金额 -->
+    <color name="warning_amount">#F57C00</color>   <!-- 橙色：警告状态 -->
+    
+    <!-- Legacy Colors (for compatibility) -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

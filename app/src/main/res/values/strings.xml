@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用基本信息 -->
+    <string name="app_name">简洁资金管理</string>
+    
+    <!-- 主界面 -->
+    <string name="disposable_amount">可支配金额</string>
+    <string name="remaining_amount">剩余金额</string>
+    <string name="days_until_payday">距离发薪日</string>
+    <string name="days_unit">天</string>
+    
+    <!-- 支出管理 -->
+    <string name="add_expense">添加支出</string>
+    <string name="expense_description">支出描述</string>
+    <string name="expense_amount">支出金额</string>
+    <string name="delete_expense">删除支出</string>
+    <string name="confirm_delete">确认删除</string>
+    <string name="delete_expense_message">确定要删除这笔支出吗？</string>
+    
+    <!-- 按钮 -->
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="confirm">确认</string>
+    
+    <!-- 错误信息 -->
+    <string name="error_empty_description">请输入支出描述</string>
+    <string name="error_invalid_amount">请输入有效的金额</string>
+    <string name="error_negative_amount">金额不能为负数</string>
+    <string name="error_database">数据库操作失败</string>
+    
+    <!-- 提示信息 -->
+    <string name="expense_added">支出已添加</string>
+    <string name="expense_deleted">支出已删除</string>
+    <string name="budget_overspent">预算已超支</string>
+    <string name="payday_approaching">发薪日即将到来</string>
+    
+    <!-- 空状态 -->
+    <string name="no_expenses">暂无支出记录</string>
+    <string name="add_first_expense">点击右下角按钮添加第一笔支出</string>
+    
+    <!-- 帮助文本 -->
+    <string name="amount_helper_text">输入您本期的可支配金额</string>
+    <string name="expense_helper_text">记录您的日常支出</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- 
+        备份规则配置
+        定义哪些数据应该包含在自动备份中
+    -->
+    
+    <!-- 包含应用数据库 -->
+    <include domain="database" />
+    
+    <!-- 包含共享首选项 -->
+    <include domain="sharedpref" />
+    
+    <!-- 排除缓存文件 -->
+    <exclude domain="cache" />
+    
+    <!-- 排除临时文件 -->
+    <exclude domain="file" path="temp/" />
+</full-backup-content>
