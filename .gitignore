@@ -108,10 +108,6 @@ node_modules/
 # Android Profiling
 *.hprof
 
-# Augment and Kiro directories (excluded as requested)
-.augment/
-.kiro/
-
 # Exclude root level markdown files except README.md
 /*.md
 !README.md
