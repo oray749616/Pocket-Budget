@@ -3,10 +3,6 @@ package com.budgetapp.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.budgetapp.domain.repository.BudgetRepository
-import com.budgetapp.domain.usecase.AddExpenseUseCase
-import com.budgetapp.domain.usecase.CalculateDaysUntilPaydayUseCase
-import com.budgetapp.domain.usecase.CalculateRemainingAmountUseCase
-import com.budgetapp.domain.usecase.DeleteExpenseUseCase
 import com.budgetapp.presentation.state.BudgetUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -29,11 +25,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class BudgetViewModel @Inject constructor(
-    private val budgetRepository: BudgetRepository,
-    private val calculateRemainingAmountUseCase: CalculateRemainingAmountUseCase,
-    private val calculateDaysUntilPaydayUseCase: CalculateDaysUntilPaydayUseCase,
-    private val addExpenseUseCase: AddExpenseUseCase,
-    private val deleteExpenseUseCase: DeleteExpenseUseCase
+    private val budgetRepository: BudgetRepository
 ) : ViewModel() {
     
     companion object {
