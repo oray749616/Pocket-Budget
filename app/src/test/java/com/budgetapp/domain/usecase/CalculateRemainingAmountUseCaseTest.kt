@@ -8,24 +8,21 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.junit.jupiter.MockitoExtension
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
 
 /**
  * CalculateRemainingAmountUseCase单元测试
  * 
  * 测试金额计算Use Case的各种场景，包括边界情况。
  */
-@ExtendWith(MockitoExtension::class)
 class CalculateRemainingAmountUseCaseTest {
-    
+
     private lateinit var repository: BudgetRepository
     private lateinit var useCase: CalculateRemainingAmountUseCase
-    
-    @BeforeEach
+
+    @Before
     fun setup() {
         repository = mockk()
         useCase = CalculateRemainingAmountUseCase(repository)
@@ -137,14 +134,17 @@ class CalculateRemainingAmountUseCaseTest {
         val result = useCase.calculateWithDetails(periodId)
         
         // Then
-        assertTrue(result.isSuccess)
+        if (result.isError) {
+            println("Test failed with error: ${result.exceptionOrNull()?.message}")
+        }
+        assertTrue("Result should be success but was error: ${result.exceptionOrNull()?.message}", result.isSuccess)
         val details = result.getOrNull()!!
-        assertEquals(disposableAmount, details.disposableAmount)
-        assertEquals(totalExpenses, details.totalExpenses)
-        assertEquals(expectedRemaining, details.remainingAmount)
+        assertEquals(disposableAmount, details.disposableAmount, 0.01)
+        assertEquals(totalExpenses, details.totalExpenses, 0.01)
+        assertEquals(expectedRemaining, details.remainingAmount, 0.01)
         assertEquals(2, details.expenseCount)
         assertFalse(details.isOverspent)
-        assertEquals(0.0, details.overspentAmount)
+        assertEquals(0.0, details.overspentAmount, 0.01)
     }
     
     @Test
@@ -175,26 +175,43 @@ class CalculateRemainingAmountUseCaseTest {
         // Then
         assertTrue(result.isSuccess)
         val details = result.getOrNull()!!
-        assertEquals(disposableAmount, details.disposableAmount)
-        assertEquals(totalExpenses, details.totalExpenses)
-        assertEquals(expectedRemaining, details.remainingAmount)
+        assertEquals(disposableAmount, details.disposableAmount, 0.01)
+        assertEquals(totalExpenses, details.totalExpenses, 0.01)
+        assertEquals(expectedRemaining, details.remainingAmount, 0.01)
         assertEquals(2, details.expenseCount)
         assertTrue(details.isOverspent)
-        assertEquals(expectedOverspent, details.overspentAmount)
+        assertEquals(expectedOverspent, details.overspentAmount, 0.01)
     }
     
     @Test
     fun `wouldCauseOverspending should return true when additional amount causes overspending`() = runTest {
         // Given
         val periodId = 1L
-        val currentRemaining = 100.0
-        val additionalAmount = 150.0
-        
-        coEvery { useCase.calculateForPeriod(periodId) } returns Result.Success(currentRemaining)
-        
+        val disposableAmount = 1000.0
+        val totalExpenses = 900.0 // 剩余100.0
+        val additionalAmount = 150.0 // 会导致超支
+
+        val currentTime = System.currentTimeMillis()
+        val mockPeriod = BudgetPeriod(
+            id = periodId,
+            disposableAmount = disposableAmount,
+            createdDate = currentTime,
+            paydayDate = currentTime + (30 * 24 * 60 * 60 * 1000L),
+            isActive = true
+        )
+
+        val expenses = listOf(
+            Expense(1, periodId, "测试支出1", 500.0, currentTime),
+            Expense(2, periodId, "测试支出2", 400.0, currentTime)
+        )
+
+        coEvery { repository.getBudgetPeriodById(periodId) } returns Result.Success(mockPeriod)
+        coEvery { repository.getTotalExpensesForPeriod(periodId) } returns Result.Success(totalExpenses)
+        coEvery { repository.getExpensesForPeriod(periodId) } returns flowOf(expenses)
+
         // When
         val result = useCase.wouldCauseOverspending(periodId, additionalAmount)
-        
+
         // Then
         assertTrue(result.isSuccess)
         assertTrue(result.getOrNull() == true)
@@ -204,14 +221,31 @@ class CalculateRemainingAmountUseCaseTest {
     fun `wouldCauseOverspending should return false when additional amount does not cause overspending`() = runTest {
         // Given
         val periodId = 1L
-        val currentRemaining = 200.0
-        val additionalAmount = 150.0
-        
-        coEvery { useCase.calculateForPeriod(periodId) } returns Result.Success(currentRemaining)
-        
+        val disposableAmount = 1000.0
+        val totalExpenses = 700.0 // 剩余300.0
+        val additionalAmount = 150.0 // 不会导致超支
+
+        val currentTime = System.currentTimeMillis()
+        val mockPeriod = BudgetPeriod(
+            id = periodId,
+            disposableAmount = disposableAmount,
+            createdDate = currentTime,
+            paydayDate = currentTime + (30 * 24 * 60 * 60 * 1000L),
+            isActive = true
+        )
+
+        val expenses = listOf(
+            Expense(1, periodId, "测试支出1", 400.0, currentTime),
+            Expense(2, periodId, "测试支出2", 300.0, currentTime)
+        )
+
+        coEvery { repository.getBudgetPeriodById(periodId) } returns Result.Success(mockPeriod)
+        coEvery { repository.getTotalExpensesForPeriod(periodId) } returns Result.Success(totalExpenses)
+        coEvery { repository.getExpensesForPeriod(periodId) } returns flowOf(expenses)
+
         // When
         val result = useCase.wouldCauseOverspending(periodId, additionalAmount)
-        
+
         // Then
         assertTrue(result.isSuccess)
         assertFalse(result.getOrNull() == true)

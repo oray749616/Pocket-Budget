@@ -8,15 +8,17 @@ import com.budgetapp.domain.repository.BudgetRepository
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 /**
  * BudgetRepositoryImpl单元测试
@@ -55,7 +57,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Success)
-        assertEquals(expectedId, result.data)
+        assertEquals(expectedId, result.getOrNull())
         coVerify { budgetDao.deactivateAllBudgetPeriods() }
         coVerify { budgetDao.insertBudgetPeriod(any()) }
     }
@@ -71,7 +73,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("不能为负数") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("不能为负数") == true)
     }
     
     @Test
@@ -95,7 +97,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Success)
-        assertEquals(expectedId, result.data)
+        assertEquals(expectedId, result.getOrNull())
         coVerify { budgetDao.insertExpense(any()) }
     }
     
@@ -110,7 +112,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("不能为空") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("不能为空") == true)
     }
     
     @Test
@@ -124,7 +126,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("必须大于0") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("必须大于0") == true)
     }
     
     @Test
@@ -151,13 +153,13 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("不能为空") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("不能为空") == true)
     }
     
     @Test
     fun `validateExpenseData should return error for too long description`() {
         // Given
-        val description = "这是一个非常非常非常非常非常非常非常非常非常非常非常非常非常非常非常非常长的描述"
+        val description = "This is a very very very very very very very long description that exceeds fifty characters"
         val amount = 100.0
         
         // When
@@ -165,7 +167,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("不能超过50个字符") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("不能超过50个字符") == true)
     }
     
     @Test
@@ -192,7 +194,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("不能为负数") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("不能为负数") == true)
     }
     
     @Test
@@ -206,7 +208,7 @@ class BudgetRepositoryImplTest {
         
         // Then
         assertTrue(result is Result.Error)
-        assertTrue(result.exception.message?.contains("必须是未来的日期") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("必须是未来的日期") == true)
     }
     
     @Test
@@ -221,15 +223,14 @@ class BudgetRepositoryImplTest {
         val totalExpenses = 300.0
         val expectedRemaining = 700.0
         
-        coEvery { budgetDao.getCurrentBudgetPeriod() } returns flowOf(mockPeriod)
-        coEvery { budgetDao.getCurrentPeriodTotalExpenses() } returns flowOf(totalExpenses)
+        every { budgetDao.getCurrentBudgetPeriod() } returns flowOf(mockPeriod)
+        every { budgetDao.getCurrentPeriodTotalExpenses() } returns flowOf(totalExpenses)
         
         // When
         val result = repository.getCurrentPeriodRemainingAmount()
-        
+
         // Then
-        result.collect { remaining ->
-            assertEquals(expectedRemaining, remaining)
-        }
+        val remaining = result.first()
+        assertEquals(expectedRemaining, remaining, 0.01)
     }
 }

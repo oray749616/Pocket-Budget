@@ -6,11 +6,9 @@ import com.budgetapp.domain.repository.BudgetRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.junit.jupiter.MockitoExtension
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 /**
@@ -18,13 +16,12 @@ import java.util.concurrent.TimeUnit
  * 
  * 测试发薪日倒计时Use Case的各种场景，包括边界情况。
  */
-@ExtendWith(MockitoExtension::class)
 class CalculateDaysUntilPaydayUseCaseTest {
-    
+
     private lateinit var repository: BudgetRepository
     private lateinit var useCase: CalculateDaysUntilPaydayUseCase
-    
-    @BeforeEach
+
+    @Before
     fun setup() {
         repository = mockk()
         useCase = CalculateDaysUntilPaydayUseCase(repository)

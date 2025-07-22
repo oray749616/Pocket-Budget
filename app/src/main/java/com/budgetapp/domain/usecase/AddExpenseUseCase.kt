@@ -3,6 +3,7 @@ package com.budgetapp.domain.usecase
 import com.budgetapp.data.database.entities.Expense
 import com.budgetapp.domain.model.Result
 import com.budgetapp.domain.repository.BudgetRepository
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -99,12 +100,8 @@ class AddExpenseUseCase @Inject constructor(
                 }
                 
                 // 获取当前活跃周期的ID
-                val currentPeriod = repository.getCurrentBudgetPeriod()
-                var periodId: Long? = null
-                currentPeriod.collect { period ->
-                    periodId = period?.id
-                }
-                periodId ?: return Result.Error(Exception("无法获取当前预算周期ID"))
+                val currentPeriod = repository.getCurrentBudgetPeriod().first()
+                currentPeriod?.id ?: return Result.Error(Exception("无法获取当前预算周期ID"))
             }
             
             // 检查是否会导致超支

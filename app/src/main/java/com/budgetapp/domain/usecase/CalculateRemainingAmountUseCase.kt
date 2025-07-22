@@ -6,6 +6,7 @@ import com.budgetapp.domain.model.Result
 import com.budgetapp.domain.repository.BudgetRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -92,14 +93,8 @@ class CalculateRemainingAmountUseCase @Inject constructor(
                 ?: return Result.Error(Exception("预算周期不存在"))
             
             // 获取支出列表
-            val expensesResult = repository.getExpensesForPeriod(periodId)
-            val expenses = mutableListOf<Expense>()
-            
-            expensesResult.collect { expenseList ->
-                expenses.clear()
-                expenses.addAll(expenseList)
-            }
-            
+            val expenses = repository.getExpensesForPeriod(periodId).first()
+
             // 计算总支出
             val totalExpenses = expenses.sumOf { it.amount }
             

@@ -125,7 +125,7 @@ class ResetBudgetDialogFragment : DialogFragment() {
             !uiState.inputErrors.containsKey("disposableAmount")) {
             try {
                 val newAmount = uiState.disposableAmountInput.toDouble()
-                viewModel.resetBudgetPeriod(newAmount)
+                viewModel.createBudgetPeriod(newAmount)
             } catch (e: NumberFormatException) {
                 // 金额格式错误，这种情况应该已经被输入验证捕获
                 binding.tilNewDisposableAmount.error = "请输入有效的金额"

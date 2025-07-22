@@ -7,24 +7,21 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.junit.jupiter.MockitoExtension
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
 
 /**
  * DeleteExpenseUseCase单元测试
  * 
  * 测试删除支出Use Case的各种场景，包括单个删除和批量删除。
  */
-@ExtendWith(MockitoExtension::class)
 class DeleteExpenseUseCaseTest {
-    
+
     private lateinit var repository: BudgetRepository
     private lateinit var useCase: DeleteExpenseUseCase
-    
-    @BeforeEach
+
+    @Before
     fun setup() {
         repository = mockk()
         useCase = DeleteExpenseUseCase(repository)

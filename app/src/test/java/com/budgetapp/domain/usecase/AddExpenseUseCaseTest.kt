@@ -4,27 +4,25 @@ import com.budgetapp.data.database.entities.BudgetPeriod
 import com.budgetapp.domain.model.Result
 import com.budgetapp.domain.repository.BudgetRepository
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.junit.jupiter.MockitoExtension
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
 
 /**
  * AddExpenseUseCase单元测试
  * 
  * 测试添加支出Use Case的各种场景，包括输入验证和边界情况。
  */
-@ExtendWith(MockitoExtension::class)
 class AddExpenseUseCaseTest {
-    
+
     private lateinit var repository: BudgetRepository
     private lateinit var useCase: AddExpenseUseCase
-    
-    @BeforeEach
+
+    @Before
     fun setup() {
         repository = mockk()
         useCase = AddExpenseUseCase(repository)
@@ -38,7 +36,7 @@ class AddExpenseUseCaseTest {
         val budgetPeriodId = 1L
         val expectedExpenseId = 5L
         
-        coEvery { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
+        every { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
         coEvery { repository.addExpense(description.trim(), amount, budgetPeriodId) } returns Result.Success(expectedExpenseId)
         
         // When
@@ -57,7 +55,7 @@ class AddExpenseUseCaseTest {
         val budgetPeriodId = 1L
         val validationError = Exception("Invalid input")
         
-        coEvery { repository.validateExpenseData(description, amount) } returns Result.Error(validationError)
+        every { repository.validateExpenseData(description, amount) } returns Result.Error(validationError)
         
         // When
         val result = useCase.execute(description, amount, budgetPeriodId)
@@ -74,7 +72,7 @@ class AddExpenseUseCaseTest {
         val amount = 5.0
         val expectedExpenseId = 3L
         
-        coEvery { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
+        every { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
         coEvery { repository.hasActiveBudgetPeriod() } returns Result.Success(true)
         coEvery { repository.addExpense(description.trim(), amount, null) } returns Result.Success(expectedExpenseId)
         
@@ -92,7 +90,7 @@ class AddExpenseUseCaseTest {
         val description = "Coffee"
         val amount = 5.0
         
-        coEvery { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
+        every { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
         coEvery { repository.hasActiveBudgetPeriod() } returns Result.Success(false)
         
         // When
@@ -118,7 +116,7 @@ class AddExpenseUseCaseTest {
             paydayDate = System.currentTimeMillis() + 30 * 24 * 60 * 60 * 1000L
         )
         
-        coEvery { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
+        every { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
         coEvery { repository.calculateRemainingAmount(budgetPeriodId) } returns Result.Success(remainingAmount)
         coEvery { repository.addExpense(description.trim(), amount, budgetPeriodId) } returns Result.Success(expectedExpenseId)
         
@@ -143,7 +141,7 @@ class AddExpenseUseCaseTest {
         val remainingAmount = 300.0
         val expectedExpenseId = 8L
         
-        coEvery { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
+        every { repository.validateExpenseData(description, amount) } returns Result.Success(Unit)
         coEvery { repository.calculateRemainingAmount(budgetPeriodId) } returns Result.Success(remainingAmount)
         coEvery { repository.addExpense(description.trim(), amount, budgetPeriodId) } returns Result.Success(expectedExpenseId)
         
@@ -151,11 +149,14 @@ class AddExpenseUseCaseTest {
         val result = useCase.executeWithOverspendingCheck(description, amount, budgetPeriodId)
         
         // Then
-        assertTrue(result.isSuccess)
+        if (result.isError) {
+            println("Test failed with error: ${result.exceptionOrNull()?.message}")
+        }
+        assertTrue("Result should be success but was error: ${result.exceptionOrNull()?.message}", result.isSuccess)
         val addResult = result.getOrNull()!!
         assertEquals(expectedExpenseId, addResult.expenseId)
         assertFalse(addResult.willOverspend)
-        assertEquals(0.0, addResult.overspendAmount)
+        assertEquals(0.0, addResult.overspendAmount, 0.01)
         assertEquals(250.0, addResult.remainingAmountAfter, 0.01)
     }
     
@@ -172,7 +173,7 @@ class AddExpenseUseCaseTest {
         
         // Mock validation for all expenses
         expenses.forEach { expense ->
-            coEvery { repository.validateExpenseData(expense.description, expense.amount) } returns Result.Success(Unit)
+            every { repository.validateExpenseData(expense.description, expense.amount) } returns Result.Success(Unit)
         }
         
         coEvery { repository.hasActiveBudgetPeriod() } returns Result.Success(true)
@@ -213,8 +214,8 @@ class AddExpenseUseCaseTest {
         )
         val budgetPeriodId = 1L
         
-        coEvery { repository.validateExpenseData("Valid expense", 100.0) } returns Result.Success(Unit)
-        coEvery { repository.validateExpenseData("", -50.0) } returns Result.Error(Exception("Invalid amount"))
+        every { repository.validateExpenseData("Valid expense", 100.0) } returns Result.Success(Unit)
+        every { repository.validateExpenseData("", -50.0) } returns Result.Error(Exception("Invalid amount"))
         
         // When
         val result = useCase.executeBatch(expenses, budgetPeriodId)
