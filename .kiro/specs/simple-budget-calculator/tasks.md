@@ -7,20 +7,20 @@
   - 创建基本的包结构：data、domain、presentation
   - _Requirements: 6.1, 7.1_
 
-- [ ] 2. 定义数据模型和Room数据库结构
-  - [ ] 2.1 创建BudgetPeriod实体类
+- [x] 2. 定义数据模型和Room数据库结构
+  - [x] 2.1 创建BudgetPeriod实体类
     - 实现BudgetPeriod数据类，包含id、disposableAmount、createdDate、paydayDate、isActive字段
     - 添加Room注解：@Entity、@PrimaryKey、@ColumnInfo
     - 为BudgetPeriod编写单元测试，验证数据完整性
     - _Requirements: 1.2, 4.2, 6.2_
 
-  - [ ] 2.2 创建Expense实体类
+  - [x] 2.2 创建Expense实体类
     - 实现Expense数据类，包含id、budgetPeriodId、description、amount、createdDate字段
     - 配置与BudgetPeriod的外键关系，设置CASCADE删除
     - 为Expense实体编写单元测试
     - _Requirements: 2.2, 5.2, 6.2_
 
-  - [ ] 2.3 实现Room数据库和DAO接口
+  - [x] 2.3 实现Room数据库和DAO接口
     - 创建BudgetDao接口，定义所有数据库操作方法
     - 实现BudgetDatabase抽象类，配置Room数据库
     - 为DAO方法编写单元测试，使用内存数据库
