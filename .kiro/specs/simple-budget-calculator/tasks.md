@@ -40,20 +40,20 @@
     - 为Repository实现编写集成测试
     - _Requirements: 6.2, 6.4_
 
-- [ ] 4. 实现业务逻辑Use Cases
-  - [ ] 4.1 实现金额计算Use Case
+- [x] 4. 实现业务逻辑Use Cases
+  - [x] 4.1 实现金额计算Use Case
     - 创建CalculateRemainingAmountUseCase，计算剩余可支配金额
     - 实现计算逻辑：可支配金额 - 所有支出总和
     - 为计算逻辑编写单元测试，包括边界情况
     - _Requirements: 3.2, 3.5_
 
-  - [ ] 4.2 实现发薪日倒计时Use Case
+  - [x] 4.2 实现发薪日倒计时Use Case
     - 创建CalculateDaysUntilPaydayUseCase，计算距离发薪日天数
     - 基于30天周期和当前日期进行计算
     - 为日期计算编写单元测试
     - _Requirements: 4.2, 4.3_
 
-  - [ ] 4.3 实现支出管理Use Cases
+  - [x] 4.3 实现支出管理Use Cases
     - 创建AddExpenseUseCase，处理添加支出的业务逻辑
     - 创建DeleteExpenseUseCase，处理删除支出的业务逻辑
     - 添加输入验证：金额必须为正数，描述不能为空
