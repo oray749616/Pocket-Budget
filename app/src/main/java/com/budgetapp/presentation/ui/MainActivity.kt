@@ -14,6 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.budgetapp.R
 import com.budgetapp.databinding.ActivityMainBinding
 import com.budgetapp.presentation.state.BudgetEvent
+import com.budgetapp.presentation.state.BudgetUiState
 import com.budgetapp.presentation.ui.fragments.BudgetMainFragment
 import com.budgetapp.presentation.viewmodel.BudgetViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -79,46 +80,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 观察ViewModel事件
+     * 观察ViewModel状态
      */
     private fun observeViewModelEvents() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.events.collect { event ->
-                    handleBudgetEvent(event)
+                viewModel.uiState.collect { state ->
+                    handleUiStateChange(state)
                 }
             }
         }
     }
 
     /**
-     * 处理预算事件
+     * 处理UI状态变化
      *
-     * @param event 预算事件
+     * @param state UI状态
      */
-    private fun handleBudgetEvent(event: BudgetEvent) {
-        when (event) {
-            is BudgetEvent.ShowError -> {
-                showErrorSnackbar(event.message)
-            }
-            is BudgetEvent.ShowSuccess -> {
-                showSuccessSnackbar(event.message)
-            }
-            is BudgetEvent.ShowOverspendWarning -> {
-                showOverspendWarning(event.overspendAmount)
-            }
-            is BudgetEvent.ExpenseAdded -> {
-                showSuccessSnackbar(getString(R.string.expense_added))
-            }
-            is BudgetEvent.ExpenseDeleted -> {
-                showSuccessSnackbar(getString(R.string.expense_deleted))
-            }
-            is BudgetEvent.BudgetPeriodReset -> {
-                showSuccessSnackbar("预算周期已重置")
-            }
-            is BudgetEvent.NavigateToSettings -> {
-                // TODO: 实现设置页面导航
-            }
+    private fun handleUiStateChange(state: BudgetUiState) {
+        // 处理错误消息
+        state.errorMessage?.let { message ->
+            showErrorSnackbar(message)
+            viewModel.clearErrorMessage()
+        }
+
+        // 处理成功消息
+        state.successMessage?.let { message ->
+            showSuccessSnackbar(message)
+            viewModel.clearSuccessMessage()
+        }
+
+        // 处理超支警告
+        if (state.isOverBudget && state.overspendAmount > 0) {
+            showOverspendWarning(state.overspendAmount)
         }
     }
 

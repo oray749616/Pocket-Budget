@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import android.content.Context
+import com.budgetapp.data.database.converters.Converters
 import com.budgetapp.data.database.dao.BudgetDao
 import com.budgetapp.data.database.entities.BudgetPeriod
 import com.budgetapp.data.database.entities.Expense
@@ -99,27 +100,4 @@ abstract class BudgetDatabase : RoomDatabase() {
             INSTANCE = null
         }
     }
-}
-
-/**
- * Room类型转换器
- * 
- * 用于处理Room不直接支持的数据类型转换
- * 目前项目中使用的都是Room原生支持的类型，所以暂时为空
- * 为将来可能的扩展预留
- */
-class Converters {
-    // 目前不需要任何类型转换器
-    // 如果将来需要存储Date、List等复杂类型，可以在这里添加转换方法
-    
-    // 示例：日期转换（如果需要的话）
-    // @TypeConverter
-    // fun fromTimestamp(value: Long?): Date? {
-    //     return value?.let { Date(it) }
-    // }
-    //
-    // @TypeConverter
-    // fun dateToTimestamp(date: Date?): Long? {
-    //     return date?.time
-    // }
 }

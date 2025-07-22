@@ -2,12 +2,11 @@ package com.budgetapp.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.budgetapp.domain.repository.BudgetRepository
 import com.budgetapp.domain.usecase.AddExpenseUseCase
 import com.budgetapp.domain.usecase.CalculateDaysUntilPaydayUseCase
 import com.budgetapp.domain.usecase.CalculateRemainingAmountUseCase
 import com.budgetapp.domain.usecase.DeleteExpenseUseCase
-import com.budgetapp.domain.repository.BudgetRepository
-import com.budgetapp.presentation.state.BudgetEvent
 import com.budgetapp.presentation.state.BudgetUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -18,7 +17,7 @@ import javax.inject.Inject
  * BudgetViewModel
  * 
  * 预算应用的主要ViewModel，管理UI状态和业务逻辑。
- * 使用MVVM架构模式，通过StateFlow和SharedFlow管理状态和事件。
+ * 使用MVVM架构模式，通过StateFlow管理状态。
  * 
  * Requirements:
  * - 3.1: 管理剩余可支配金额的显示
@@ -54,13 +53,6 @@ class BudgetViewModel @Inject constructor(
      */
     val uiState: StateFlow<BudgetUiState> = _uiState.asStateFlow()
     
-    /**
-     * 一次性事件流
-     * 用于处理导航、提示等不需要保存在状态中的事件
-     */
-    private val _events = MutableSharedFlow<BudgetEvent>()
-    val events: SharedFlow<BudgetEvent> = _events.asSharedFlow()
-    
     // ==================== 初始化 ====================
     
     init {
@@ -81,27 +73,18 @@ class BudgetViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 
-                // 加载当前预算周期和支出数据
-                loadBudgetData()
+                // 检查是否有活跃的预算周期
+                val hasActivePeriod = budgetRepository.hasActiveBudgetPeriod()
+                if (hasActivePeriod.isError) {
+                    handleError(hasActivePeriod.exceptionOrNull(), "检查预算周期失败")
+                    return@launch
+                }
+                
+                _uiState.update { it.copy(isLoading = false) }
                 
             } catch (e: Exception) {
-                handleError(e, "加载数据失败")
-            } finally {
-                _uiState.update { it.copy(isLoading = false) }
+                handleError(e, "加载初始数据失败")
             }
-        }
-    }
-    
-    /**
-     * 加载预算数据
-     */
-    private suspend fun loadBudgetData() {
-        try {
-            // 这里会在后续实现具体的数据加载逻辑
-            // 当前只是基础结构
-            
-        } catch (e: Exception) {
-            handleError(e, "加载预算数据失败")
         }
     }
     
@@ -116,8 +99,7 @@ class BudgetViewModel @Inject constructor(
                 .collect { budgetPeriod ->
                     _uiState.update { currentState ->
                         currentState.copy(
-                            currentBudgetPeriod = budgetPeriod,
-                            showEmptyState = budgetPeriod == null
+                            currentBudgetPeriod = budgetPeriod
                         )
                     }
                 }
@@ -125,15 +107,14 @@ class BudgetViewModel @Inject constructor(
         
         viewModelScope.launch {
             // 监听当前周期支出变化
-            budgetRepository.getExpensesForCurrentPeriod()
+            budgetRepository.getCurrentPeriodExpenses()
                 .catch { e -> handleError(e, "监听支出数据失败") }
                 .collect { expenses ->
                     val totalExpenses = expenses.sumOf { it.amount }
                     _uiState.update { currentState ->
                         currentState.copy(
                             expenses = expenses,
-                            totalExpenses = totalExpenses,
-                            hasExpenses = expenses.isNotEmpty()
+                            totalExpenses = totalExpenses
                         )
                     }
                 }
@@ -141,7 +122,7 @@ class BudgetViewModel @Inject constructor(
         
         viewModelScope.launch {
             // 监听剩余金额变化
-            calculateRemainingAmountUseCase()
+            budgetRepository.getCurrentPeriodRemainingAmount()
                 .catch { e -> handleError(e, "计算剩余金额失败") }
                 .collect { remainingAmount ->
                     val isOverBudget = remainingAmount < 0
@@ -156,74 +137,109 @@ class BudgetViewModel @Inject constructor(
                     }
                 }
         }
-        
-        viewModelScope.launch {
-            // 监听发薪日倒计时变化
-            calculateDaysUntilPaydayUseCase()
-                .catch { e -> handleError(e, "计算发薪日倒计时失败") }
-                .collect { daysUntilPayday ->
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            daysUntilPayday = daysUntilPayday,
-                            isNearPayday = daysUntilPayday in 1..7
-                        )
+    }
+    
+    // ==================== 预算周期管理 ====================
+    
+    /**
+     * 显示重置预算对话框
+     */
+    fun showResetBudgetDialog() {
+        _uiState.update { it.copy(showResetBudgetDialog = true) }
+    }
+    
+    /**
+     * 隐藏重置预算对话框
+     */
+    fun hideResetBudgetDialog() {
+        _uiState.update { 
+            it.copy(
+                showResetBudgetDialog = false,
+                disposableAmountInput = "",
+                inputErrors = it.inputErrors - "disposableAmount"
+            ) 
+        }
+    }
+    
+    /**
+     * 更新可支配金额输入
+     * 
+     * @param amount 可支配金额字符串
+     */
+    fun updateDisposableAmount(amount: String) {
+        _uiState.update { currentState ->
+            val errors = currentState.inputErrors.toMutableMap()
+            
+            // 验证可支配金额输入
+            try {
+                if (amount.isBlank()) {
+                    errors["disposableAmount"] = "可支配金额不能为空"
+                } else {
+                    val amountValue = amount.toDouble()
+                    if (amountValue < 0) {
+                        errors["disposableAmount"] = "可支配金额不能为负数"
+                    } else if (amountValue > 9999999.99) {
+                        errors["disposableAmount"] = "可支配金额不能超过9,999,999.99"
+                    } else {
+                        errors.remove("disposableAmount")
                     }
                 }
-        }
-    }
-    
-    // ==================== 错误处理 ====================
-    
-    /**
-     * 处理错误
-     * 
-     * @param error 异常对象
-     * @param defaultMessage 默认错误消息
-     */
-    private fun handleError(error: Throwable, defaultMessage: String = "操作失败") {
-        val errorMessage = error.message ?: defaultMessage
-        
-        _uiState.update { currentState ->
+            } catch (e: NumberFormatException) {
+                errors["disposableAmount"] = "请输入有效的金额"
+            }
+            
             currentState.copy(
-                isLoading = false,
-                errorMessage = errorMessage
+                disposableAmountInput = amount,
+                inputErrors = errors
             )
         }
-        
-        // 发送错误事件
+    }
+    
+    /**
+     * 创建新的预算周期
+     *
+     * @param disposableAmount 可支配金额
+     */
+    fun createBudgetPeriod(disposableAmount: Double) {
         viewModelScope.launch {
-            _events.emit(BudgetEvent.ShowError(errorMessage))
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                val result = budgetRepository.createBudgetPeriod(
+                    disposableAmount = disposableAmount,
+                    paydayDate = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000) // 30天后
+                )
+
+                if (result.isSuccess) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            showResetBudgetDialog = false,
+                            disposableAmountInput = "",
+                            successMessage = "预算周期创建成功"
+                        )
+                    }
+
+                    // 重新加载数据
+                    loadInitialData()
+                } else {
+                    val error = result.exceptionOrNull()
+                    handleError(error ?: Exception("创建预算周期失败"), "创建预算周期失败")
+                }
+
+            } catch (e: Exception) {
+                handleError(e, "创建预算周期失败")
+            }
         }
     }
     
-    /**
-     * 清除错误消息
-     */
-    fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
-    }
-    
-    /**
-     * 清除成功消息
-     */
-    fun clearSuccess() {
-        _uiState.update { it.copy(successMessage = null) }
-    }
-    
-    // ==================== UI交互方法 ====================
+    // ==================== 支出管理 ====================
     
     /**
      * 显示添加支出对话框
      */
     fun showAddExpenseDialog() {
-        _uiState.update { 
-            it.copy(
-                showAddExpenseDialog = true,
-                expenseDescription = "",
-                expenseAmount = "",
-                inputErrors = emptyMap()
-            ) 
-        }
+        _uiState.update { it.copy(showAddExpenseDialog = true) }
     }
     
     /**
@@ -235,62 +251,10 @@ class BudgetViewModel @Inject constructor(
                 showAddExpenseDialog = false,
                 expenseDescription = "",
                 expenseAmount = "",
-                inputErrors = emptyMap()
+                inputErrors = it.inputErrors - "description" - "amount"
             ) 
         }
     }
-    
-    /**
-     * 显示删除确认对话框
-     * 
-     * @param expenseId 要删除的支出ID
-     */
-    fun showDeleteConfirmDialog(expenseId: Long) {
-        _uiState.update { 
-            it.copy(
-                showDeleteConfirmDialog = true,
-                expenseToDelete = expenseId
-            ) 
-        }
-    }
-    
-    /**
-     * 隐藏删除确认对话框
-     */
-    fun hideDeleteConfirmDialog() {
-        _uiState.update { 
-            it.copy(
-                showDeleteConfirmDialog = false,
-                expenseToDelete = null
-            ) 
-        }
-    }
-    
-    /**
-     * 显示重置预算周期对话框
-     */
-    fun showResetBudgetDialog() {
-        _uiState.update { 
-            it.copy(
-                showResetBudgetDialog = true,
-                disposableAmountInput = ""
-            ) 
-        }
-    }
-    
-    /**
-     * 隐藏重置预算周期对话框
-     */
-    fun hideResetBudgetDialog() {
-        _uiState.update { 
-            it.copy(
-                showResetBudgetDialog = false,
-                disposableAmountInput = ""
-            ) 
-        }
-    }
-    
-    // ==================== 输入处理方法 ====================
     
     /**
      * 更新支出描述输入
@@ -304,8 +268,8 @@ class BudgetViewModel @Inject constructor(
             // 验证描述输入
             if (description.isBlank()) {
                 errors["description"] = "支出描述不能为空"
-            } else if (description.length > 50) {
-                errors["description"] = "支出描述不能超过50个字符"
+            } else if (description.length > 100) {
+                errors["description"] = "支出描述不能超过100个字符"
             } else {
                 errors.remove("description")
             }
@@ -350,80 +314,6 @@ class BudgetViewModel @Inject constructor(
             )
         }
     }
-    
-    /**
-     * 更新可支配金额输入
-     *
-     * @param amount 可支配金额字符串
-     */
-    fun updateDisposableAmount(amount: String) {
-        _uiState.update { currentState ->
-            val errors = currentState.inputErrors.toMutableMap()
-
-            // 验证可支配金额输入
-            try {
-                if (amount.isBlank()) {
-                    errors["disposableAmount"] = "可支配金额不能为空"
-                } else {
-                    val amountValue = amount.toDouble()
-                    if (amountValue < 0) {
-                        errors["disposableAmount"] = "可支配金额不能为负数"
-                    } else if (amountValue > 9999999.99) {
-                        errors["disposableAmount"] = "可支配金额不能超过9,999,999.99"
-                    } else {
-                        errors.remove("disposableAmount")
-                    }
-                }
-            } catch (e: NumberFormatException) {
-                errors["disposableAmount"] = "请输入有效的金额"
-            }
-
-            currentState.copy(
-                disposableAmountInput = amount,
-                inputErrors = errors
-            )
-        }
-    }
-
-    // ==================== 业务逻辑方法 ====================
-
-    /**
-     * 创建新的预算周期
-     *
-     * @param disposableAmount 可支配金额
-     */
-    fun createBudgetPeriod(disposableAmount: Double) {
-        viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-                val result = budgetRepository.createNewBudgetPeriod(disposableAmount)
-
-                if (result.isSuccess) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            showResetBudgetDialog = false,
-                            disposableAmountInput = "",
-                            successMessage = "预算周期创建成功"
-                        )
-                    }
-
-                    _events.emit(BudgetEvent.BudgetPeriodReset)
-                    _events.emit(BudgetEvent.ShowSuccess("预算周期创建成功"))
-
-                    // 重新加载数据
-                    loadBudgetData()
-                } else {
-                    val error = result.exceptionOrNull()
-                    handleError(error ?: Exception("创建预算周期失败"), "创建预算周期失败")
-                }
-
-            } catch (e: Exception) {
-                handleError(e, "创建预算周期失败")
-            }
-        }
-    }
 
     /**
      * 添加支出
@@ -436,12 +326,9 @@ class BudgetViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-                // 使用带超支检查的添加方法
-                val result = addExpenseUseCase.executeWithOverspendingCheck(description, amount)
+                val result = budgetRepository.addExpense(description, amount)
 
                 if (result.isSuccess) {
-                    val addResult = result.getOrNull()!!
-
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -452,15 +339,6 @@ class BudgetViewModel @Inject constructor(
                             successMessage = "支出添加成功"
                         )
                     }
-
-                    _events.emit(BudgetEvent.ExpenseAdded)
-                    _events.emit(BudgetEvent.ShowSuccess("支出添加成功"))
-
-                    // 如果会导致超支，显示警告
-                    if (addResult.willOverspend) {
-                        _events.emit(BudgetEvent.ShowOverspendWarning(addResult.overspendAmount))
-                    }
-
                 } else {
                     val error = result.exceptionOrNull()
                     handleError(error ?: Exception("添加支出失败"), "添加支出失败")
@@ -471,22 +349,46 @@ class BudgetViewModel @Inject constructor(
             }
         }
     }
-
+    
+    /**
+     * 显示删除确认对话框
+     * 
+     * @param expenseId 要删除的支出ID
+     */
+    fun showDeleteConfirmDialog(expenseId: Long) {
+        _uiState.update { 
+            it.copy(
+                showDeleteConfirmDialog = true,
+                expenseToDelete = expenseId
+            ) 
+        }
+    }
+    
+    /**
+     * 隐藏删除确认对话框
+     */
+    fun hideDeleteConfirmDialog() {
+        _uiState.update { 
+            it.copy(
+                showDeleteConfirmDialog = false,
+                expenseToDelete = null
+            ) 
+        }
+    }
+    
     /**
      * 删除支出
-     *
-     * @param expenseId 支出ID
+     * 
+     * @param expenseId 要删除的支出ID
      */
     fun deleteExpense(expenseId: Long) {
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-                val result = deleteExpenseUseCase.executeById(expenseId)
-
+                
+                val result = budgetRepository.deleteExpenseById(expenseId)
+                
                 if (result.isSuccess) {
-                    val deleteResult = result.getOrNull()!!
-
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -495,49 +397,19 @@ class BudgetViewModel @Inject constructor(
                             successMessage = "支出删除成功"
                         )
                     }
-
-                    val expenseDescription = deleteResult.deletedExpense.description
-                    _events.emit(BudgetEvent.ExpenseDeleted(expenseDescription))
-                    _events.emit(BudgetEvent.ShowSuccess("支出删除成功"))
-
                 } else {
                     val error = result.exceptionOrNull()
                     handleError(error ?: Exception("删除支出失败"), "删除支出失败")
                 }
-
+                
             } catch (e: Exception) {
                 handleError(e, "删除支出失败")
             }
         }
     }
-
-    /**
-     * 重置预算周期
-     *
-     * @param newDisposableAmount 新的可支配金额
-     */
-    fun resetBudgetPeriod(newDisposableAmount: Double) {
-        viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-                // 先重置当前周期
-                val resetResult = budgetRepository.resetBudgetPeriod()
-
-                if (resetResult.isSuccess) {
-                    // 创建新的预算周期
-                    createBudgetPeriod(newDisposableAmount)
-                } else {
-                    val error = resetResult.exceptionOrNull()
-                    handleError(error ?: Exception("重置预算周期失败"), "重置预算周期失败")
-                }
-
-            } catch (e: Exception) {
-                handleError(e, "重置预算周期失败")
-            }
-        }
-    }
-
+    
+    // ==================== 刷新和重试 ====================
+    
     /**
      * 刷新数据
      */
@@ -545,12 +417,70 @@ class BudgetViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-                loadBudgetData()
+                loadInitialData()
             } catch (e: Exception) {
                 handleError(e, "刷新数据失败")
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
+        }
+    }
+    
+    /**
+     * 重试操作
+     */
+    fun retryOperation() {
+        refreshData()
+    }
+    
+    // ==================== 消息处理 ====================
+    
+    /**
+     * 清除错误消息
+     */
+    fun clearErrorMessage() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+    
+    /**
+     * 清除成功消息
+     */
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+    
+    /**
+     * 清除所有消息
+     */
+    fun clearAllMessages() {
+        _uiState.update { 
+            it.copy(
+                errorMessage = null,
+                successMessage = null
+            ) 
+        }
+    }
+    
+    // ==================== 错误处理 ====================
+    
+    /**
+     * 处理错误
+     * 
+     * @param error 错误对象
+     * @param message 错误消息前缀
+     */
+    private fun handleError(error: Throwable?, message: String) {
+        val errorMessage = if (error != null) {
+            "$message: ${error.message}"
+        } else {
+            message
+        }
+        
+        _uiState.update { 
+            it.copy(
+                isLoading = false,
+                errorMessage = errorMessage
+            ) 
         }
     }
 }
