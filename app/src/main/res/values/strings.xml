@@ -42,4 +42,26 @@
     <!-- 帮助文本 -->
     <string name="amount_helper_text">输入您本期的可支配金额</string>
     <string name="expense_helper_text">记录您的日常支出</string>
+
+    <!-- 菜单项 -->
+    <string name="reset_budget_period">重置预算周期</string>
+    <string name="settings">设置</string>
+
+    <!-- 对话框 -->
+    <string name="reset_budget_title">重置预算周期</string>
+    <string name="reset_budget_message">这将清除所有支出记录并开始新的预算周期。确定要继续吗？</string>
+    <string name="new_disposable_amount">新的可支配金额</string>
+
+    <!-- 格式化文本 -->
+    <string name="amount_format">¥%.2f</string>
+    <string name="days_format">%d天</string>
+    <string name="overspend_warning">注意：本次支出将导致超支 ¥%.2f</string>
+
+    <!-- 状态文本 -->
+    <string name="loading">加载中…</string>
+    <string name="no_budget_period">请先设置可支配金额</string>
+    <string name="setup_budget">设置预算</string>
+
+    <!-- 删除确认对话框 -->
+    <string name="delete_expense_message_detailed">确定要删除支出"%1$s"（¥%.2f）吗？</string>
 </resources>
