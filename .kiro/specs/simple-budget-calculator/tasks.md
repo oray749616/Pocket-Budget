@@ -26,14 +26,14 @@
     - 为DAO方法编写单元测试，使用内存数据库
     - _Requirements: 6.1, 6.3_
 
-- [ ] 3. 实现Repository层和数据访问逻辑
-  - [ ] 3.1 定义Repository接口
+- [x] 3. 实现Repository层和数据访问逻辑
+  - [x] 3.1 定义Repository接口
     - 创建BudgetRepository接口，定义所有数据操作的抽象方法
     - 使用Flow返回类型支持响应式数据流
     - 定义Result包装类处理操作结果和错误
     - _Requirements: 6.3, 6.4_
 
-  - [ ] 3.2 实现Repository具体类
+  - [x] 3.2 实现Repository具体类
     - 创建BudgetRepositoryImpl类，实现BudgetRepository接口
     - 集成Room DAO，实现所有数据库操作
     - 添加错误处理和异常转换逻辑
