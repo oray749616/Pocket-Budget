@@ -3,9 +3,7 @@ package com.budgetapp.data.database
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import android.content.Context
-import com.budgetapp.data.database.converters.Converters
 import com.budgetapp.data.database.dao.BudgetDao
 import com.budgetapp.data.database.entities.BudgetPeriod
 import com.budgetapp.data.database.entities.Expense
@@ -28,7 +26,6 @@ import com.budgetapp.data.database.entities.Expense
     version = 1,
     exportSchema = true
 )
-@TypeConverters(Converters::class)
 abstract class BudgetDatabase : RoomDatabase() {
     
     /**

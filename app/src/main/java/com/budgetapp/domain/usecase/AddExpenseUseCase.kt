@@ -39,7 +39,9 @@ class AddExpenseUseCase @Inject constructor(
             // 验证输入数据
             val validationResult = validateInput(description, amount)
             if (validationResult.isError) {
-                return validationResult as Result<Long>
+                return Result.Error(
+                    validationResult.exceptionOrNull() ?: Exception("输入验证失败")
+                )
             }
             
             // 如果没有指定预算周期ID，检查是否存在活跃的预算周期
